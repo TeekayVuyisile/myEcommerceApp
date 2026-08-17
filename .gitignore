@@ -32,10 +32,20 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
 
+# netlify
+.netlify
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# personal files that shouldn't be published
+My_Updated_CV.pdf
+
+# Claude Code local tooling (not part of the shipped app)
+.claude/

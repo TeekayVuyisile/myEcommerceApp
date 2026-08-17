@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  logging: {
+    browserToTerminal: true, // Forwards logs to your server terminal
+  },
 };
 
 export default nextConfig;

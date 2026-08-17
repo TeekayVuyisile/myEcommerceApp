@@ -1,5 +1,24 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Setup (order → preview → pay system)
+
+Before running the app, a few manual, account-specific steps are required:
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com).
+2. Run the migration in `supabase/migrations/001_orders.sql` against it (SQL Editor, paste and run).
+3. Seed exactly one admin user: Authentication → Users → Add user (email + password). This is your login for `/admin`.
+4. **Create a Paystack account** at [paystack.com](https://paystack.com) and grab your **test mode** secret key (Settings → API Keys & Webhooks) while building/testing.
+5. Copy `.env.example` to `.env.local` and fill in:
+   - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase → Project Settings → API
+   - `SUPABASE_SERVICE_ROLE_KEY` — same page, the **service_role** secret (never expose this to the browser)
+   - `PAYSTACK_SECRET_KEY` — from step 4
+   - `NEXT_PUBLIC_SITE_URL` — `http://localhost:3000` locally, your real domain in production
+6. In Paystack Dashboard → Settings → API Keys & Webhooks, set the webhook URL to `<your-site-url>/api/paystack/webhook` (use an `ngrok http 3000` tunnel URL for local testing, since Paystack needs a public HTTPS endpoint to deliver webhooks to).
+
+Once that's done: log in at `/admin`, create an order, set a `preview_url` and move its status to `preview_ready`, then open `/order/<token>` (shown on the order's admin page) to see the client-facing flow and test a payment with Paystack's test card `4084 0840 8408 4081` (any future expiry, CVV `408`, OTP `123456`).
+
+One placeholder still needs a real value: the WhatsApp number in `src/app/page.js` (`WHATSAPP_NUMBER`).
+
 ## Getting Started
 
 First, run the development server:
