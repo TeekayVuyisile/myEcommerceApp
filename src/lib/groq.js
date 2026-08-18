@@ -26,7 +26,10 @@ RULES:
 - If asked something you don't have information about, say so honestly and suggest WhatsApp instead of guessing.
 - Stay on topic: Teekay's web development services. Politely redirect off-topic requests back to how you can help with his services.`;
 
-export async function getChatCompletion(messages) {
+// Returns a ReadableStream of plain-text token chunks (already extracted
+// from Groq's SSE `data: {...}` frames), ready to pipe straight into a
+// Response body.
+export async function streamChatCompletion(messages) {
   const res = await fetch(GROQ_API_URL, {
     method: "POST",
     headers: {
@@ -38,6 +41,7 @@ export async function getChatCompletion(messages) {
       messages: [{ role: "system", content: SYSTEM_PROMPT }, ...messages],
       temperature: 0.4,
       max_tokens: 300,
+      stream: true,
     }),
   });
 
@@ -48,6 +52,41 @@ export async function getChatCompletion(messages) {
     throw error;
   }
 
-  const data = await res.json();
-  return data.choices[0].message.content;
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+
+  return new ReadableStream({
+    async start(controller) {
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+
+            const data = trimmed.slice(5).trim();
+            if (data === "[DONE]") {
+              controller.close();
+              return;
+            }
+
+            const delta = JSON.parse(data).choices?.[0]?.delta?.content;
+            if (delta) controller.enqueue(encoder.encode(delta));
+          }
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
+    },
+  });
 }

@@ -1,4 +1,4 @@
-import { getChatCompletion } from "@/lib/groq";
+import { streamChatCompletion } from "@/lib/groq";
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 1000;
@@ -29,8 +29,10 @@ export async function POST(request) {
   }
 
   try {
-    const reply = await getChatCompletion(messages);
-    return Response.json({ reply });
+    const stream = await streamChatCompletion(messages);
+    return new Response(stream, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   } catch (error) {
     if (error.status === 429) {
       return Response.json(

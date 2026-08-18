@@ -33,6 +33,21 @@ function SendIcon() {
   );
 }
 
+function TypingIndicator() {
+  return (
+    <div className="flex w-fit items-center gap-1 self-start rounded-2xl bg-background px-3.5 py-3">
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60"
+          animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function ChatWidget({ whatsappHref }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([GREETING]);
@@ -65,14 +80,39 @@ export default function ChatWidget({ whatsappHref }) {
         // Skip the client-side-only greeting when sending history to the API.
         body: JSON.stringify({ messages: nextMessages.filter((m) => m !== GREETING) }),
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Something went wrong — please try WhatsApp instead.");
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Something went wrong — please try WhatsApp instead.");
         return;
       }
 
-      setMessages([...nextMessages, { role: "assistant", content: data.reply }]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let started = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        if (!chunk) continue;
+
+        if (!started) {
+          started = true;
+          setIsLoading(false);
+          setMessages((prev) => [...prev, { role: "assistant", content: chunk }]);
+        } else {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            return [...prev.slice(0, -1), { ...last, content: last.content + chunk }];
+          });
+        }
+      }
+
+      if (!started) {
+        setMessages((prev) => [...prev, { role: "assistant", content: "…" }]);
+      }
     } catch {
       setError("Something went wrong — please try WhatsApp instead.");
     } finally {
@@ -118,11 +158,7 @@ export default function ChatWidget({ whatsappHref }) {
                 {m.content}
               </motion.div>
             ))}
-            {isLoading && (
-              <div className="self-start rounded-2xl bg-background px-3 py-2 text-sm text-muted-foreground">
-                Typing…
-              </div>
-            )}
+            {isLoading && <TypingIndicator />}
             {error && (
               <div className="self-start rounded-2xl bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
                 {error}
