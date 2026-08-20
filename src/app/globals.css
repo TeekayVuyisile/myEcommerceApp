@@ -50,3 +50,256 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Rotating-globe illustration (see app/globe-visual.js) */
+
+@keyframes globe-rotate {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.05);
+  }
+}
+
+@keyframes globe-ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  75%,
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes globe-dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.globe-sphere {
+  overflow: hidden;
+  background: radial-gradient(
+    circle at 32% 28%,
+    color-mix(in srgb, var(--accent) 60%, white) 0%,
+    var(--accent) 45%,
+    color-mix(in srgb, var(--accent) 55%, black) 100%
+  );
+  box-shadow:
+    inset -18px -18px 36px rgba(0, 0, 0, 0.35),
+    inset 10px 10px 24px rgba(255, 255, 255, 0.15),
+    0 20px 45px -18px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.globe-meridian {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  animation: globe-rotate 6.6s ease-in-out infinite;
+}
+
+.globe-latitude-top,
+.globe-latitude-bottom {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 40%;
+  border-radius: 50%;
+}
+
+.globe-latitude-top {
+  top: 18%;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.globe-latitude-bottom {
+  bottom: 18%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.globe-equator {
+  position: absolute;
+  top: 50%;
+  left: 6%;
+  right: 6%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.globe-link {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  opacity: 0.7;
+  stroke-dasharray: 4 4;
+  stroke-dashoffset: 8;
+  animation: globe-dash 1.4s linear infinite;
+}
+
+.globe-pin-dot {
+  fill: #ffffff;
+}
+
+.globe-pin-ping {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.8;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: globe-ping 2.6s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .globe-meridian,
+  .globe-link,
+  .globe-pin-ping {
+    animation: none;
+  }
+}
+
+/* Benefit card visuals (see app/benefit-visuals.js) */
+
+@keyframes trust-pulse {
+  0%,
+  100% {
+    transform: scale(0.95);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.24;
+  }
+}
+
+@keyframes trust-check {
+  0%,
+  15% {
+    stroke-dashoffset: 24;
+    opacity: 1;
+  }
+  40%,
+  75% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+.trust-glow {
+  filter: blur(6px);
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: trust-pulse 2.8s ease-in-out infinite;
+}
+
+.trust-check {
+  stroke-dasharray: 24;
+  animation: trust-check 3.6s ease-in-out infinite;
+}
+
+@keyframes clock-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.clock-hand {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform-origin: bottom center;
+  background: currentColor;
+  border-radius: 999px;
+}
+
+.clock-hand--hour {
+  width: 2px;
+  height: 26%;
+  margin-left: -1px;
+  animation: clock-rotate 6s linear infinite;
+}
+
+.clock-hand--minute {
+  width: 1.5px;
+  height: 36%;
+  margin-left: -0.75px;
+  animation: clock-rotate 2.4s linear infinite;
+}
+
+.clock-orbit {
+  position: absolute;
+  inset: -6px;
+  animation: clock-rotate 2.4s linear infinite;
+}
+
+.clock-orbit-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+@keyframes standout-grow {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.18);
+  }
+}
+
+@keyframes standout-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+
+.standout-bar {
+  transform-origin: bottom;
+}
+
+.standout-bar--accent {
+  animation:
+    standout-grow 2.4s ease-in-out infinite,
+    standout-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trust-glow,
+  .trust-check,
+  .clock-hand,
+  .clock-orbit,
+  .standout-bar--accent {
+    animation: none;
+  }
+}

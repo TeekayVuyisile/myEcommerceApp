@@ -3,6 +3,9 @@ import Link from "next/link";
 import PricingCard from "./pricing-card";
 import DemoCard from "./demo-card";
 import HeroVisual from "./hero-visual";
+import GlobeVisual from "./globe-visual";
+import SiteNav from "./site-nav";
+import { TrustBadge, ClockVisual, StandoutVisual } from "./benefit-visuals";
 import ThemeToggle from "@/components/theme-toggle";
 import ChatWidget from "@/components/chat-widget";
 import Reveal from "@/components/reveal";
@@ -22,6 +25,14 @@ function whatsappHref(message) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+const NAV_LINKS = [
+  { href: "#benefits", label: "Why a website" },
+  { href: "#work", label: "Work" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#about", label: "About" },
+];
+
 const DEMOS = [
   {
     title: "Website",
@@ -40,43 +51,21 @@ const DEMOS = [
 const BENEFITS = [
   {
     title: "Reach more customers",
-    body: "Be found on Google and social media by people who don't know you yet — not just the customers who already do.",
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M2 12h20M12 2c2.5 2.8 4 6.4 4 10s-1.5 7.2-4 10c-2.5-2.8-4-6.4-4-10s1.5-7.2 4-10Z" />
-      </>
-    ),
   },
   {
     title: "Look established & trustworthy",
     body: "A real website makes a business look serious and permanent — not just another WhatsApp number or Facebook page.",
-    icon: (
-      <>
-        <path d="M12 2 3 6v6c0 5 3.8 9.4 9 10 5.2-.6 9-5 9-10V6l-9-4Z" />
-        <path d="m9 12 2 2 4-4" />
-      </>
-    ),
+    Visual: TrustBadge,
   },
   {
     title: "Sell around the clock",
     body: "Customers can browse, place orders, or get in touch any time — even while you're asleep or busy with another job.",
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 6v6l4 2" />
-      </>
-    ),
+    Visual: ClockVisual,
   },
   {
     title: "Stand out from competitors",
     body: "Most small businesses in your area still don't have a proper website — having one is an easy way to look more credible than the competition.",
-    icon: (
-      <>
-        <path d="M3 17 9 11 13 15 21 7" />
-        <path d="M15 7h6v6" />
-      </>
-    ),
+    Visual: StandoutVisual,
   },
 ];
 
@@ -136,9 +125,27 @@ export default async function Home() {
 
       <header className="sticky top-0 z-10 border-b border-glass-border bg-glass backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-          <span className="text-sm font-semibold tracking-tight">
-            Teekay Web Studio
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-accent">
+              <Image
+                src="/logo.png"
+                alt="Teekay Web Studio logo"
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+                priority
+              />
+            </div>
+            <span className="text-sm font-semibold tracking-tight">
+              Teekay Web Studio
+            </span>
+          </div>
+          <SiteNav
+            links={NAV_LINKS}
+            ctaHref={whatsappHref(
+              "Hi! I'd like to talk about building a website/e-commerce store."
+            )}
+          />
           <div className="flex items-center gap-3">
             <MotionLink
               href={whatsappHref(
@@ -242,7 +249,7 @@ export default async function Home() {
           </Reveal>
         </div>
 
-        <section className="relative mt-24 w-full">
+        <section id="benefits" className="relative mt-24 w-full scroll-mt-24">
           <Reveal className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight">
               Why your business needs a website
@@ -251,24 +258,31 @@ export default async function Home() {
               A few of the ways a proper website pays for itself.
             </p>
           </Reveal>
-          <div className="mt-10 grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {BENEFITS.map((benefit, i) => (
+          <Reveal delay={0.1} className="mt-10">
+            <div className="flex flex-col items-center gap-8 rounded-2xl border border-glass-border bg-glass p-6 shadow-sm backdrop-blur-xl backdrop-saturate-150 sm:flex-row sm:gap-10 sm:p-8">
+              <div className="w-full max-w-[220px] shrink-0 sm:w-56">
+                <GlobeVisual />
+              </div>
+              <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+                <h3 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                  {BENEFITS[0].title}
+                </h3>
+                <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
+                  Be found on Google and social media by{" "}
+                  <span className="font-medium text-accent">
+                    people who don&apos;t know you yet
+                  </span>{" "}
+                  — not just the customers who already do.
+                </p>
+              </div>
+            </div>
+          </Reveal>
+
+          <div className="mt-6 grid w-full grid-cols-1 gap-6 sm:grid-cols-3">
+            {BENEFITS.slice(1).map((benefit, i) => (
               <Reveal key={benefit.title} delay={i * 0.1}>
                 <div className="flex h-full flex-col items-start gap-3 rounded-2xl border border-glass-border bg-glass p-6 shadow-sm backdrop-blur-xl backdrop-saturate-150">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-accent">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      {benefit.icon}
-                    </svg>
-                  </div>
+                  <benefit.Visual />
                   <h3 className="font-semibold">{benefit.title}</h3>
                   <p className="text-sm text-muted-foreground">
                     {benefit.body}
@@ -281,13 +295,13 @@ export default async function Home() {
 
        
 
-        <section className="mt-24 w-full">
+        <section id="work" className="mt-24 w-full scroll-mt-24">
           <Reveal className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight">
-              See my work
+              See my demo work
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              A quick look at the kind of sites and stores I build.
+              A quick look at the kind of sites and stores I can build.
             </p>
           </Reveal>
           <div className="mt-10 grid w-full grid-cols-1 gap-6 sm:grid-cols-2">
@@ -299,7 +313,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="relative mt-24 w-full">
+        <section id="pricing" className="relative mt-24 w-full scroll-mt-24">
           <Reveal className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight">
               Services &amp; pricing
@@ -332,7 +346,7 @@ export default async function Home() {
           </p>
         </section>
 
-        <section className="relative mt-24 w-full">
+        <section id="how-it-works" className="relative mt-24 w-full scroll-mt-24">
           <Reveal>
             <h2 className="text-center text-2xl font-semibold tracking-tight">
               How it works
@@ -365,12 +379,11 @@ export default async function Home() {
             ))}
           </div>
         </section>
-        <section className="relative mt-24 w-full">
-        
-            <h2 className="text-center text-2xl font-semibold tracking-tight">
-              More about the developer
-            </h2>
-         </section>
+        <section id="about" className="relative mt-24 w-full scroll-mt-24">
+          <h2 className="text-center text-2xl font-semibold tracking-tight">
+            More about the developer
+          </h2>
+        </section>
          <Reveal className="relative mt-6 flex w-full max-w-2xl flex-col items-center gap-5 rounded-2xl border border-glass-border bg-glass p-6 text-center shadow-sm backdrop-blur-xl backdrop-saturate-150 sm:flex-row sm:items-start sm:text-left">
           <Image
             src="/profile.jpg"
