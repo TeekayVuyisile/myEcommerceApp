@@ -6,6 +6,7 @@ import OrderManageForm from "./order-manage-form";
 import InstallmentPanel from "./installment-panel";
 import PlanEditor from "./plan-editor";
 import MaintenancePanel from "./maintenance-panel";
+import DeleteOrderForm from "./delete-order-form";
 import AdminHeader from "@/app/admin/admin-header";
 import { Card, StatusBadge, formatRand } from "@/app/admin/ui";
 
@@ -113,6 +114,10 @@ export default async function AdminOrderDetailPage({ params }) {
           description="One-off payment requests for this client — updates, fixes, or a month's maintenance fee."
         >
           <MaintenancePanel order={order} maintenanceOrders={maintenanceOrders} />
+        </Card>
+
+        <Card title="Danger zone">
+          <DeleteOrderForm order={order} hasCharges={charges.length > 0} />
         </Card>
       </div>
     </main>

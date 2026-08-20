@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { chargeNextInstallment } from "./actions";
-import { buttonPrimaryClass, formatRand } from "@/app/admin/ui";
+import { buttonPrimaryClass, formatDate, formatRand } from "@/app/admin/ui";
 
 const PLAN_LABELS = {
   once_off: "Once-off",
@@ -62,7 +62,7 @@ export default function InstallmentPanel({ order, charges }) {
         <div>
           <dt className="text-muted-foreground">Next due</dt>
           <dd className="mt-0.5 font-medium text-foreground">
-            {!fullyPaid && order.next_charge_due_at ? order.next_charge_due_at : "—"}
+            {!fullyPaid && order.next_charge_due_at ? formatDate(order.next_charge_due_at) : "—"}
           </dd>
         </div>
       </dl>
@@ -131,6 +131,11 @@ export default function InstallmentPanel({ order, charges }) {
               >
                 <span className="text-foreground">
                   #{c.installment_number} — {formatRand(c.amount_cents)}
+                  {c.status === "paid" && (
+                    <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                      · paid {formatDate(c.paid_at ?? c.updated_at)}
+                    </span>
+                  )}
                 </span>
                 <ChargeStatusBadge status={c.status} />
               </li>

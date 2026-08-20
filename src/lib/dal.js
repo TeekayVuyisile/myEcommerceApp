@@ -217,6 +217,29 @@ export async function updateOrderStatus(id, status) {
   if (error) throw new Error(error.message);
 }
 
+// Only allowed when the order has zero charge attempts (pending, failed, or
+// paid) — order_charges cascades on order delete, and even a failed attempt
+// is worth keeping as history. Anything with a charge on record should be
+// cancelled via updateOrderStatus() instead, never deleted.
+export async function deleteOrder(id) {
+  await requireAdminSession();
+  const supabase = createServiceClient();
+
+  const { count, error: countError } = await supabase
+    .from("order_charges")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", id);
+  if (countError) throw new Error(countError.message);
+  if (count > 0) {
+    throw new Error(
+      "This order has payment history and can't be deleted — set its status to Cancelled instead."
+    );
+  }
+
+  const { error } = await supabase.from("orders").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
 export async function setPreviewUrl(id, previewUrl) {
   await requireAdminSession();
   const supabase = createServiceClient();
@@ -390,6 +413,25 @@ export async function getOrderByToken(token) {
   return data;
 }
 
+// Public — no admin session, same trust model as getOrderByToken: only ever
+// called with an orderId that a caller already reached via a valid token
+// lookup, so this can't be used to enumerate another client's payments.
+// Only exposes what a client should see about their own paid instalments —
+// no Paystack reference, no pending/failed attempts.
+export async function getPaidChargesForOrder(orderId) {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from("order_charges")
+    .select("installment_number, amount_cents, paid_at")
+    .eq("order_id", orderId)
+    .eq("status", "paid")
+    .order("installment_number", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 function addOneMonth(date) {
   const d = new Date(date);
   d.setMonth(d.getMonth() + 1);
@@ -440,7 +482,7 @@ export async function finalizeCharge(reference, { status, authorizationCode }) {
 
   const { data: updatedCharges, error: chargeUpdateError } = await supabase
     .from("order_charges")
-    .update({ status })
+    .update({ status, ...(status === "paid" ? { paid_at: new Date().toISOString() } : {}) })
     .eq("paystack_reference", reference)
     .eq("status", "pending")
     .select("id, order_id, installment_number");

@@ -30,6 +30,9 @@ export const SERVICES = [
     price: "R2,600",
     features: [
       "Custom-designed, mobile-friendly website",
+      "About 5 pages (e.g. Home, About, Services, Gallery, Contact)",
+      "WhatsApp Integration — a click-to-chat button so visitors can message you directly",
+      "Email Integration — a contact form that sends enquiries straight to your inbox",
       "I'll set up your domain name for you (you cover the domain cost)",
       "I'll set up your hosting for you (you cover the hosting cost)",
       "Basic SEO setup",
@@ -48,7 +51,8 @@ export const SERVICES = [
     price: "R7,000",
     highlight: true,
     features: [
-      "Everything in the Website plan (SEO, hosting & domain setup assistance)",
+      "Everything in the Website plan (WhatsApp & Email Integration, SEO, hosting & domain setup assistance)",
+      "Payment Gateway Integration — customers pay securely by card, right on your site",
       "Full order management panel",
       "Product & inventory management",
       "2 months of free maintenance after launch, then R400/month",

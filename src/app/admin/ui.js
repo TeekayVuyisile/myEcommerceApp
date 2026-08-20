@@ -46,6 +46,9 @@ export const buttonPrimaryClass =
 export const buttonSecondaryClass =
   "inline-flex w-fit cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-card-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
 
+export const buttonDangerClass =
+  "inline-flex w-fit cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500";
+
 export const errorTextClass =
   "rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400";
 
@@ -86,4 +89,17 @@ export function formatRand(cents) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+// Accepts either a timestamptz (paid_at) or a plain date (next_charge_due_at).
+// Noon fallback keeps a bare "YYYY-MM-DD" from rolling back a day for anyone
+// west of UTC when the browser renders it in local time.
+export function formatDate(dateOrTimestamp) {
+  if (!dateOrTimestamp) return "—";
+  const value = dateOrTimestamp.includes("T") ? dateOrTimestamp : `${dateOrTimestamp}T12:00:00`;
+  return new Date(value).toLocaleDateString("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }

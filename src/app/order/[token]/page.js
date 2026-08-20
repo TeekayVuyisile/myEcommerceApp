@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getOrderByToken } from "@/lib/dal";
+import { getOrderByToken, getPaidChargesForOrder } from "@/lib/dal";
 import PayButton from "./pay-button";
 import ThemeToggle from "@/components/theme-toggle";
 
@@ -30,6 +30,19 @@ function formatRand(cents) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+}
+
+// Accepts either a timestamptz (paid_at) or a plain date (next_charge_due_at).
+// Noon fallback keeps a bare "YYYY-MM-DD" from rolling back a day for anyone
+// west of UTC when the browser renders it in local time.
+function formatDate(dateOrTimestamp) {
+  if (!dateOrTimestamp) return "—";
+  const value = dateOrTimestamp.includes("T") ? dateOrTimestamp : `${dateOrTimestamp}T12:00:00`;
+  return new Date(value).toLocaleDateString("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function CheckIcon() {
@@ -136,6 +149,8 @@ export default async function OrderPage({ params }) {
   const isMaintenance = order.service_type === "maintenance";
   const hasRemainingInstalments =
     order.total_installments > 1 && order.installments_paid < order.total_installments;
+  const paidCharges =
+    order.total_installments > 1 ? await getPaidChargesForOrder(order.id) : [];
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -233,11 +248,42 @@ export default async function OrderPage({ params }) {
                   Payment received — thank you!
                 </p>
                 {hasRemainingInstalments && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {order.installments_paid} of {order.total_installments} instalments paid so
-                    far — we&apos;ll take care of the rest, no action needed from you.
-                  </p>
+                  <div className="mt-3 rounded-lg bg-accent/10 px-3 py-2.5 text-xs text-foreground">
+                    <p>
+                      {order.installments_paid} of {order.total_installments} instalments paid so
+                      far — we&apos;ll take care of the rest, no action needed from you.
+                    </p>
+                    {order.next_charge_due_at && (
+                      <p className="mt-1.5 font-medium">
+                        Next automatic charge: {formatRand(order.installment_amount_cents)} on{" "}
+                        {formatDate(order.next_charge_due_at)}
+                      </p>
+                    )}
+                  </div>
                 )}
+              </div>
+            )}
+
+            {order.total_installments > 1 && paidCharges.length > 0 && (
+              <div className="mt-5 border-t border-card-border pt-4">
+                <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Payment history
+                </h3>
+                <ul className="mt-2 flex flex-col gap-1.5">
+                  {paidCharges.map((c) => (
+                    <li
+                      key={c.installment_number}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="text-foreground">
+                        Instalment {c.installment_number} — {formatRand(c.amount_cents)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDate(c.paid_at)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 

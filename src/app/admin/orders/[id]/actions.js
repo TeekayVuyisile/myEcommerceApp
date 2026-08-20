@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   updateOrderStatus,
   setPreviewUrl,
@@ -11,6 +12,7 @@ import {
   recordChargeAttempt,
   finalizeCharge,
   createMaintenanceOrder,
+  deleteOrder,
 } from "@/lib/dal";
 import { chargeAuthorization } from "@/lib/paystack";
 import { getResolvedServices } from "@/lib/pricing";
@@ -107,6 +109,19 @@ export async function createMaintenanceOrderAction(prevState, formData) {
     success: true,
     orderUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/order/${newOrder.order_token}`,
   };
+}
+
+export async function deleteOrderAction(prevState, formData) {
+  const id = formData.get("id")?.toString();
+
+  try {
+    await deleteOrder(id);
+  } catch (err) {
+    return { error: err.message };
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin");
 }
 
 export async function chargeNextInstallment(prevState, formData) {
