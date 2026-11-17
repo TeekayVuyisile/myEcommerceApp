@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import { instalmentAmountCents } from "@/lib/payments";
 
 function formatRand(cents) {
   return `R${(cents / 100).toLocaleString("en-ZA", {
@@ -14,7 +15,7 @@ export async function sendInstalmentReminderEmail(dueOrders) {
   const rows = dueOrders
     .map(
       (o) =>
-        `<li><strong>${o.client_name}</strong> — instalment ${o.installments_paid + 1} of ${o.total_installments}, ${formatRand(o.installment_amount_cents)} (due ${o.next_charge_due_at})</li>`
+        `<li><strong>${o.client_name}</strong> — instalment ${o.installments_paid + 1} of ${o.total_installments}, ${formatRand(instalmentAmountCents(o, o.installments_paid + 1))} (due ${o.next_charge_due_at})</li>`
     )
     .join("");
 

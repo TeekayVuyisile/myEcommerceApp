@@ -98,13 +98,15 @@ export default function PricingCard({
           transition={{ duration: 0.15 }}
         >
           <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
-            {plan.amountRand != null
-              ? `${formatRand(plan.amountRand)}${isRecurring ? "/mo" : ""}`
+            {plan.laterAmountRand != null && isRecurring
+              ? `${formatRand(plan.laterAmountRand)}/mo`
               : price}
           </p>
-          {isRecurring && plan.amountRand != null && (
+          {plan.depositRand != null && (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {price} total over {plan.installments} months
+              {isRecurring
+                ? `After a ${formatRand(plan.depositRand)} deposit (30%) · ${price} total over ${plan.installments} months`
+                : `${formatRand(plan.depositRand)} deposit (30%) to start · ${formatRand(plan.laterAmountRand)} when you approve`}
             </p>
           )}
         </motion.div>
@@ -165,7 +167,7 @@ export default function PricingCard({
         Choose {name}
       </MotionLink>
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        No payment until you approve the finished preview.
+        30% deposit starts the build. Pay by card or EFT.
       </p>
     </motion.div>
   );

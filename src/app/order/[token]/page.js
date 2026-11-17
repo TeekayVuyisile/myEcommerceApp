@@ -2,6 +2,14 @@ import { notFound } from "next/navigation";
 import { getOrderByToken, getPaidChargesForOrder } from "@/lib/dal";
 import PayButton from "./pay-button";
 import ThemeToggle from "@/components/theme-toggle";
+import {
+  WHATSAPP_NUMBER,
+  eftReference,
+  getPayableInstalment,
+  instalmentAmountCents,
+  instalmentLabel,
+  isDepositOrder,
+} from "@/lib/payments";
 
 export const metadata = {
   robots: { index: false, follow: false },
@@ -18,12 +26,72 @@ const STEP_LABELS = {
 };
 
 const STEP_DESCRIPTIONS = {
-  pending: "We've got your order and will start soon.",
+  pending: "We've got your order. Your 30% deposit below gets the build started.",
   in_progress: "Your site is being built right now.",
-  preview_ready: "Take a look below and pay when you're happy.",
+  preview_ready: "Take a look at the preview — ask for any changes, then pay the balance when you're happy.",
   paid: "Thanks — payment received.",
   delivered: "Everything's been handed over. Enjoy!",
 };
+
+// Bank details come from env vars so they never live in the repo. If the
+// account number isn't set, the EFT option is hidden entirely.
+function getEftDetails() {
+  const accountNumber = process.env.EFT_ACCOUNT_NUMBER;
+  if (!accountNumber) return null;
+  return {
+    accountHolder: process.env.EFT_ACCOUNT_HOLDER,
+    bankName: process.env.EFT_BANK_NAME,
+    accountNumber,
+    branchCode: process.env.EFT_BRANCH_CODE,
+    accountType: process.env.EFT_ACCOUNT_TYPE,
+  };
+}
+
+function EftDetailsBlock({ order, amountCents, label }) {
+  const eft = getEftDetails();
+  if (!eft) return null;
+
+  const rows = [
+    ["Account holder", eft.accountHolder],
+    ["Bank", eft.bankName],
+    ["Account type", eft.accountType],
+    ["Account number", eft.accountNumber],
+    ["Branch code", eft.branchCode],
+    ["Amount", formatRand(amountCents)],
+    ["Payment reference", eftReference(order)],
+  ].filter(([, value]) => value);
+
+  const proofMessage = `Hi! I've paid ${formatRand(amountCents)} by EFT for my order. Reference: ${eftReference(order)}.`;
+
+  return (
+    <details className="mt-4 rounded-lg border border-card-border bg-background px-4 py-3 text-sm">
+      <summary className="cursor-pointer font-medium text-foreground">
+        Prefer to pay by EFT? Invoice / bank details
+      </summary>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Pay your {label.toLowerCase()} to the account below and use the reference exactly as shown.
+        Your payment is confirmed once it reflects in the account — send proof of payment on
+        WhatsApp to speed this up.
+      </p>
+      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+        {rows.map(([name, value]) => (
+          <div key={name} className="contents">
+            <dt className="text-muted-foreground">{name}</dt>
+            <dd className="font-medium text-foreground">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <a
+        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(proofMessage)}`}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-4 inline-flex items-center rounded-lg border border-card-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
+      >
+        Send proof of payment on WhatsApp
+      </a>
+    </details>
+  );
+}
 
 function formatRand(cents) {
   return `R${(cents / 100).toLocaleString("en-ZA", {
@@ -138,13 +206,31 @@ function StatusTimeline({ status }) {
   );
 }
 
+function hasRemainingInstalmentsFor(order) {
+  return order.installments_paid < order.total_installments;
+}
+
 export default async function OrderPage({ params }) {
   const { token } = await params;
   const order = await getOrderByToken(token);
   if (!order) notFound();
 
-  const canPay = order.status === "preview_ready";
-  const isPaid = order.status === "paid" || order.status === "delivered";
+  const payable = getPayableInstalment(order);
+  const canPay = Boolean(payable);
+  const depositOrder = isDepositOrder(order);
+  // Deposit orders start paying before the build, so "paid" here means the
+  // whole plan is settled (or delivered), not just the first payment.
+  const isPaid = depositOrder
+    ? order.installments_paid >= order.total_installments || order.status === "delivered"
+    : order.status === "paid" || order.status === "delivered";
+  const nextNumber = Math.min(order.installments_paid + 1, order.total_installments);
+  const nextAmountCents = instalmentAmountCents(order, nextNumber);
+  const depositPaid = depositOrder && order.installments_paid >= 1;
+  const showEftForLaterInstalments =
+    depositOrder &&
+    !payable &&
+    hasRemainingInstalmentsFor(order) &&
+    !order.paystack_authorization_code;
   const isCancelled = order.status === "cancelled";
   const isMaintenance = order.service_type === "maintenance";
   const hasRemainingInstalments =
@@ -214,18 +300,13 @@ export default async function OrderPage({ params }) {
 
             {order.total_installments > 1 && (
               <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-                <span>
-                  Instalment {Math.min(order.installments_paid + 1, order.total_installments)} of{" "}
-                  {order.total_installments}
-                </span>
+                <span>{instalmentLabel(order, nextNumber)}</span>
                 <span>{formatRand(order.amount_cents)} total</span>
               </div>
             )}
 
             <p className="mt-2 text-3xl font-semibold tracking-tight">
-              {formatRand(
-                order.total_installments > 1 ? order.installment_amount_cents : order.amount_cents
-              )}
+              {formatRand(order.total_installments > 1 ? nextAmountCents : order.amount_cents)}
               <span className="ml-1.5 text-sm font-normal text-muted-foreground">
                 {order.currency}
               </span>
@@ -236,26 +317,55 @@ export default async function OrderPage({ params }) {
                 <PayButton token={token} />
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <LockIcon />
-                  Secure checkout via Paystack
+                  Secure card checkout via Paystack
                 </p>
+                <EftDetailsBlock
+                  order={order}
+                  amountCents={payable.amountCents}
+                  label={instalmentLabel(order, payable.number)}
+                />
               </div>
             )}
 
-            {isPaid && (
+            {showEftForLaterInstalments && (
+              <div className="mt-2">
+                <p className="text-sm text-muted-foreground">
+                  Your next payment of {formatRand(nextAmountCents)}
+                  {order.next_charge_due_at ? ` is due on ${formatDate(order.next_charge_due_at)}` : " is due"}.
+                </p>
+                <EftDetailsBlock
+                  order={order}
+                  amountCents={nextAmountCents}
+                  label={instalmentLabel(order, nextNumber)}
+                />
+              </div>
+            )}
+
+            {(isPaid || depositPaid) && (
               <div className="mt-5">
                 <p className="flex items-center gap-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
                   <CheckCircleIcon />
-                  Payment received — thank you!
+                  {isPaid ? "Payment received — thank you!" : "Deposit received — thank you!"}
                 </p>
                 {hasRemainingInstalments && (
                   <div className="mt-3 rounded-lg bg-accent/10 px-3 py-2.5 text-xs text-foreground">
-                    <p>
-                      {order.installments_paid} of {order.total_installments} instalments paid so
-                      far — we&apos;ll take care of the rest, no action needed from you.
-                    </p>
-                    {order.next_charge_due_at && (
+                    {depositOrder && order.total_installments === 2 ? (
+                      <p>
+                        The balance of {formatRand(nextAmountCents)} is due once you&apos;ve seen
+                        and approved your preview.
+                      </p>
+                    ) : (
+                      <p>
+                        {order.installments_paid} of {order.total_installments} payments made so
+                        far
+                        {order.paystack_authorization_code
+                          ? " — we'll take care of the rest, no action needed from you."
+                          : "."}
+                      </p>
+                    )}
+                    {order.next_charge_due_at && order.paystack_authorization_code && (
                       <p className="mt-1.5 font-medium">
-                        Next automatic charge: {formatRand(order.installment_amount_cents)} on{" "}
+                        Next automatic charge: {formatRand(nextAmountCents)} on{" "}
                         {formatDate(order.next_charge_due_at)}
                       </p>
                     )}
@@ -276,7 +386,7 @@ export default async function OrderPage({ params }) {
                       className="flex items-center justify-between text-sm"
                     >
                       <span className="text-foreground">
-                        Instalment {c.installment_number} — {formatRand(c.amount_cents)}
+                        {instalmentLabel(order, c.installment_number)} — {formatRand(c.amount_cents)}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {formatDate(c.paid_at)}
@@ -287,9 +397,11 @@ export default async function OrderPage({ params }) {
               </div>
             )}
 
-            {!canPay && !isPaid && (
+            {!canPay && !isPaid && !depositPaid && (
               <p className="mt-4 text-sm text-muted-foreground">
-                You&apos;ll be able to pay once your preview is ready.
+                {depositOrder
+                  ? "This order isn't payable right now — message us on WhatsApp if you think that's a mistake."
+                  : "You'll be able to pay once your preview is ready."}
               </p>
             )}
           </div>

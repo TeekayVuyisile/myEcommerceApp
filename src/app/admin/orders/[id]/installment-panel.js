@@ -1,8 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { chargeNextInstallment } from "./actions";
-import { buttonPrimaryClass, formatDate, formatRand } from "@/app/admin/ui";
+import { chargeNextInstallment, confirmEftPayment } from "./actions";
+import { buttonPrimaryClass, buttonSecondaryClass, formatDate, formatRand } from "@/app/admin/ui";
+import {
+  instalmentAmountCents,
+  instalmentLabel,
+  isDepositOrder,
+  eftReference,
+} from "@/lib/payments";
 
 const PLAN_LABELS = {
   once_off: "Once-off",
@@ -32,8 +38,12 @@ function ChargeStatusBadge({ status }) {
 
 export default function InstallmentPanel({ order, charges }) {
   const [state, action, pending] = useActionState(chargeNextInstallment, undefined);
+  const [eftState, eftAction, eftPending] = useActionState(confirmEftPayment, undefined);
 
   const fullyPaid = order.installments_paid >= order.total_installments;
+  const nextNumber = order.installments_paid + 1;
+  const nextAmountCents = fullyPaid ? 0 : instalmentAmountCents(order, nextNumber);
+  const nextLabel = fullyPaid ? "" : instalmentLabel(order, nextNumber);
   const hasCard = Boolean(order.paystack_authorization_code);
   const progressPct =
     order.total_installments > 0
@@ -54,9 +64,13 @@ export default function InstallmentPanel({ order, charges }) {
           <dd className="mt-0.5 font-medium text-foreground">{formatRand(order.amount_cents)}</dd>
         </div>
         <div>
-          <dt className="text-muted-foreground">Per instalment</dt>
+          <dt className="text-muted-foreground">
+            {isDepositOrder(order) ? "Deposit (30%)" : "Per instalment"}
+          </dt>
           <dd className="mt-0.5 font-medium text-foreground">
-            {formatRand(order.installment_amount_cents)}
+            {formatRand(
+              isDepositOrder(order) ? order.deposit_cents : order.installment_amount_cents
+            )}
           </dd>
         </div>
         <div>
@@ -89,32 +103,66 @@ export default function InstallmentPanel({ order, charges }) {
       )}
 
       {order.total_installments > 1 && (
-        <div>
+        <div className="flex flex-col gap-3">
           {fullyPaid ? (
             <p className="text-sm text-emerald-600 dark:text-emerald-400">
               All instalments have been paid — nothing left to charge.
             </p>
-          ) : !hasCard ? (
-            <p className="text-sm text-muted-foreground">
-              Waiting on the client&apos;s first payment before you can charge
-              further instalments.
-            </p>
           ) : (
-            <form action={action}>
-              <input type="hidden" name="id" value={order.id} />
-              <button disabled={pending} type="submit" className={buttonPrimaryClass}>
-                {pending
-                  ? "Charging…"
-                  : `Charge instalment ${order.installments_paid + 1} of ${order.total_installments} (${formatRand(order.installment_amount_cents)})`}
-              </button>
-            </form>
+            <>
+              {hasCard ? (
+                <form action={action}>
+                  <input type="hidden" name="id" value={order.id} />
+                  <button disabled={pending} type="submit" className={buttonPrimaryClass}>
+                    {pending
+                      ? "Charging…"
+                      : `Charge saved card — ${nextLabel} (${formatRand(nextAmountCents)})`}
+                  </button>
+                </form>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No saved card yet — the client either hasn&apos;t paid their
+                  deposit, or is paying by EFT. For EFT, confirm each payment
+                  below once you&apos;ve seen it in your bank account.
+                </p>
+              )}
+
+              <form
+                action={eftAction}
+                className="rounded-lg border border-card-border bg-background p-3"
+              >
+                <input type="hidden" name="id" value={order.id} />
+                <p className="text-xs text-muted-foreground">
+                  Client paying by EFT? Their reference is{" "}
+                  <span className="font-mono font-medium text-foreground">
+                    {eftReference(order)}
+                  </span>
+                  . Only confirm after the money is actually in your account.
+                </p>
+                <button
+                  disabled={eftPending}
+                  type="submit"
+                  className={`${buttonSecondaryClass} mt-2`}
+                >
+                  {eftPending
+                    ? "Recording…"
+                    : `Confirm EFT received — ${nextLabel} (${formatRand(nextAmountCents)})`}
+                </button>
+              </form>
+            </>
           )}
           {state?.error && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-400">{state.error}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
           )}
           {state?.success && (
-            <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-400">
-              Charged successfully.
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">Charged successfully.</p>
+          )}
+          {eftState?.error && (
+            <p className="text-sm text-red-600 dark:text-red-400">{eftState.error}</p>
+          )}
+          {eftState?.success && (
+            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              EFT payment recorded.
             </p>
           )}
         </div>
@@ -131,6 +179,9 @@ export default function InstallmentPanel({ order, charges }) {
               >
                 <span className="text-foreground">
                   #{c.installment_number} — {formatRand(c.amount_cents)}
+                  <span className="ml-1.5 text-xs font-normal uppercase text-muted-foreground">
+                    {c.method === "eft" ? "EFT" : "Card"}
+                  </span>
                   {c.status === "paid" && (
                     <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                       · paid {formatDate(c.paid_at ?? c.updated_at)}
