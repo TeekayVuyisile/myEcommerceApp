@@ -16,6 +16,7 @@ import {
 } from "@/lib/dal";
 import { chargeAuthorization } from "@/lib/paystack";
 import { getResolvedServices } from "@/lib/pricing";
+import { instalmentAmountCents } from "@/lib/payments";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -124,6 +125,44 @@ export async function deleteOrderAction(prevState, formData) {
   redirect("/admin");
 }
 
+// Records a bank transfer the admin has actually SEEN land in their account.
+// Only confirm after checking your bank — never on the client's say-so or a
+// screenshot alone. Reuses the same ledger + finalize path as card payments
+// (so deposit -> in_progress, fully paid -> paid, etc. all behave the same);
+// the 'eft' method just tells revenue maths that no Paystack fee applies.
+export async function confirmEftPayment(prevState, formData) {
+  const id = formData.get("id")?.toString();
+  const order = await getOrder(id);
+
+  if (!order) return { error: "Order not found." };
+  if (order.status === "cancelled") {
+    return { error: "This order is cancelled." };
+  }
+  if (order.installments_paid >= order.total_installments) {
+    return { error: "This order is already fully paid — nothing left to confirm." };
+  }
+
+  const installmentNumber = order.installments_paid + 1;
+  const amountCents = instalmentAmountCents(order, installmentNumber);
+  const reference = `eft_${order.id}_inst${installmentNumber}_${Date.now()}`;
+
+  try {
+    await recordChargeAttempt(order.id, {
+      installmentNumber,
+      amountCents,
+      reference,
+      method: "eft",
+    });
+    await finalizeCharge(reference, { status: "paid" });
+  } catch (err) {
+    return { error: err.message };
+  }
+
+  revalidatePath(`/admin/orders/${id}`);
+  revalidatePath("/admin");
+  return { success: true };
+}
+
 export async function chargeNextInstallment(prevState, formData) {
   const id = formData.get("id")?.toString();
   const order = await getOrder(id);
@@ -139,12 +178,13 @@ export async function chargeNextInstallment(prevState, formData) {
   }
 
   const installmentNumber = order.installments_paid + 1;
+  const amountCents = instalmentAmountCents(order, installmentNumber);
   const reference = `order_${order.id}_inst${installmentNumber}_${Date.now()}`;
 
   try {
     await recordChargeAttempt(order.id, {
       installmentNumber,
-      amountCents: order.installment_amount_cents,
+      amountCents,
       reference,
     });
   } catch (err) {
@@ -156,7 +196,7 @@ export async function chargeNextInstallment(prevState, formData) {
     result = await chargeAuthorization({
       authorization_code: order.paystack_authorization_code,
       email: order.client_email,
-      amount: order.installment_amount_cents,
+      amount: amountCents,
       reference,
     });
   } catch (err) {

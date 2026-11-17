@@ -121,14 +121,17 @@ export default function CreateOrderForm({ services }) {
             required
             className={inputClass}
           />
+          <p className="text-xs text-muted-foreground">
+            A 30% deposit is requested first, then the balance on approval.
+          </p>
         </Field>
       ) : (
         <p className="rounded-lg bg-accent/10 px-3 py-2 text-sm font-medium text-accent">
-          {plan.installments === 1
-            ? `Total: ${formatRand(plan.amountRand)}`
-            : `${formatRand(plan.amountRand)}/month × ${plan.installments} = ${formatRand(
-                service.totalRand
-              )} total`}
+          {`${formatRand(plan.depositRand)} deposit (30%) + ${
+            plan.laterCount === 1
+              ? `${formatRand(plan.laterAmountRand)} balance on approval`
+              : `${plan.laterCount} × ${formatRand(plan.laterAmountRand)}/month`
+          } = ${formatRand(service.totalRand)} total`}
           {service.onSale && " — sale price"}
         </p>
       )}

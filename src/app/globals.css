@@ -303,3 +303,110 @@ html {
     animation: none;
   }
 }
+
+/* About / closing-CTA section accents (see app/page.js) */
+
+@keyframes soft-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+.avatar-glow {
+  animation: soft-glow-pulse 4s ease-in-out infinite;
+}
+
+.cta-glow {
+  animation: soft-glow-pulse 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-glow,
+  .cta-glow {
+    animation: none;
+  }
+}
+
+/* Hero gradient slash — slow drift (see app/page.js) */
+
+@keyframes hero-gradient-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    transform: translate3d(2%, -2.5%, 0) rotate(2deg) scale(1.04);
+  }
+  66% {
+    transform: translate3d(-2.5%, 2%, 0) rotate(-1.5deg) scale(1.02);
+  }
+}
+
+.hero-gradient-drift {
+  animation: hero-gradient-drift 22s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-gradient-drift {
+    animation: none;
+  }
+}
+
+/* Hero browser-preview mockup (see app/hero-visual.js) — the wireframe bars
+   shimmer like a loading skeleton, reinforcing "your site is being built". */
+
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--foreground) 25%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 2.4s ease-in-out infinite;
+  animation-delay: var(--shimmer-delay, 0s);
+}
+
+@keyframes hero-mock-live-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, 0);
+  }
+}
+
+.hero-mock-live-dot {
+  animation: hero-mock-live-dot 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after,
+  .hero-mock-live-dot {
+    animation: none;
+  }
+}

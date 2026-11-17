@@ -7,27 +7,37 @@ export const metadata = {
 
 export default function RefundPolicyPage() {
   return (
-    <LegalPage title="Refund Policy" updatedDate="15 August 2026">
+    <LegalPage title="Refund Policy" updatedDate="17 November 2026">
       <Section title="1. Our approach">
         <p>
-          Unlike most freelance work, you never pay upfront for a project.
-          I build first, you review a live, working preview, and you only
-          pay once you&apos;ve approved it. Because of that, by the time
-          any payment happens, you&apos;ve already seen exactly what
-          you&apos;re paying for.
+          A 30% deposit starts every project. I then build, you review a
+          live, working preview and request as many changes as you need, and
+          the balance is only due once you&apos;ve approved the result. By
+          the time you pay the balance, you&apos;ve already seen exactly
+          what you&apos;re paying for.
         </p>
       </Section>
 
-      <Section title="2. No refunds after payment">
+      <Section title="2. The deposit">
         <p>
-          Since payment only happens after you&apos;ve reviewed and
-          approved the finished preview, all payments are final. There
-          isn&apos;t a &quot;buyer&apos;s remorse&quot; refund window,
-          because you were never asked to pay blind in the first place.
+          If you cancel before I&apos;ve started work on your project, your
+          deposit is refunded in full. Once I&apos;ve started building, the
+          deposit is non-refundable, because it covers design and
+          development time already spent. If I&apos;m unable to deliver the
+          project you ordered, I&apos;ll refund your deposit in full.
         </p>
       </Section>
 
-      <Section title="3. What happens if something's wrong">
+      <Section title="3. No refunds after you approve and pay the balance">
+        <p>
+          Since the balance is only paid after you&apos;ve reviewed and
+          approved the finished preview, payments made after approval are
+          final. There isn&apos;t a &quot;buyer&apos;s remorse&quot; refund
+          window, because you were never asked to pay the balance blind.
+        </p>
+      </Section>
+
+      <Section title="4. What happens if something's wrong">
         <p>
           If something breaks, or the delivered site doesn&apos;t actually
           match what you approved in the preview, that&apos;s not a refund
@@ -36,7 +46,7 @@ export default function RefundPolicyPage() {
         </p>
       </Section>
 
-      <Section title="4. Payment plans">
+      <Section title="5. Payment plans">
         <p>
           For instalment plans, each payment you&apos;ve made covers work
           and service already delivered up to that point, so past
@@ -46,7 +56,7 @@ export default function RefundPolicyPage() {
         </p>
       </Section>
 
-      <Section title="5. Maintenance fees">
+      <Section title="6. Maintenance fees">
         <p>
           Monthly maintenance fees (billed after your free 2-month period)
           cover support made available during that month. Once a
@@ -56,16 +66,16 @@ export default function RefundPolicyPage() {
         </p>
       </Section>
 
-      <Section title="6. Before you pay, there's no risk">
+      <Section title="7. EFT payments">
         <p>
-          You can walk away at any point before approving and paying, at
-          no cost and no obligation — that&apos;s the whole point of the
-          model. The no-refunds rule only applies once you&apos;ve
-          reviewed the work and chosen to pay for it.
+          If you pay by EFT, please use the payment reference shown on your
+          order link. If you pay the wrong amount or use the wrong
+          reference, contact me and I&apos;ll sort it out — any genuine
+          overpayment is refunded to the account it came from.
         </p>
       </Section>
 
-      <Section title="7. Contact">
+      <Section title="8. Contact">
         <p>
           Questions about a specific payment? Email{" "}
           <a

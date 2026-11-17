@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of Service" updatedDate="15 August 2026">
+    <LegalPage title="Terms of Service" updatedDate="17 November 2026">
       <Section title="1. Who we are">
         <p>
           These Terms of Service (&quot;Terms&quot;) govern the web
@@ -44,23 +44,32 @@ export default function TermsPage() {
       <Section title="3. How an order works">
         <p>
           Projects start with a conversation, usually over WhatsApp, about
-          what you need. I then build the project and send you a private
-          link with a live, working preview. You can request changes to
-          that preview as many times as needed — there is no limit on
-          revision rounds before you approve it. You only pay once
-          you&apos;re satisfied with the result, through a secure payment
-          link on this site. Full handover (final files, deployment to your
-          domain) happens after payment is received.
+          what you need. Once we&apos;ve agreed the scope and price, I send
+          you a private order link and ask for a 30% deposit (by card or
+          EFT) before I start building. I then build the project and share
+          a live, working preview. You can request changes to that preview
+          as many times as needed — there is no limit on revision rounds
+          before you approve it. The remaining balance is due once
+          you&apos;re satisfied with the result (or in monthly instalments,
+          if you chose a payment plan). Full handover (final files,
+          deployment to your domain) happens after the final payment is
+          received.
         </p>
       </Section>
 
       <Section title="4. Payment">
         <p>
-          Prices are in South African Rand (ZAR). Payments are processed by
-          Paystack, a third-party payment provider. I never see or store
-          your card details — they&apos;re entered directly with Paystack.
-          Depending on the service, you may pay once-off or in the monthly
-          instalments described on the homepage at the time of your order.
+          Prices are in South African Rand (ZAR). You can pay by card or by
+          EFT (bank transfer). Card payments are processed by Paystack, a
+          third-party payment provider — I never see or store your card
+          details, they&apos;re entered directly with Paystack. For EFT,
+          your private order link shows my banking details and a unique
+          payment reference; use that reference so I can match your
+          payment. An EFT payment counts as received once it reflects in my
+          bank account. I don&apos;t accept cash deposits or cash-sends.
+          Every order starts with a 30% deposit; the balance is then paid
+          once-off on approval or in the monthly instalments described on
+          the homepage at the time of your order.
         </p>
       </Section>
 
@@ -96,11 +105,11 @@ export default function TermsPage() {
       <Section title="8. Revisions and changes after payment">
         <p>
           Revisions to the preview are unlimited and free before you
-          approve and pay. Once you&apos;ve paid, that&apos;s treated as
-          final approval of the work — genuine bugs or things that
-          don&apos;t match what was agreed are fixed as part of normal
-          support, but new features or design changes requested after
-          payment are quoted and billed as separate work.
+          approve it. Once you&apos;ve approved the work and paid the
+          balance, that&apos;s treated as final approval — genuine bugs or
+          things that don&apos;t match what was agreed are fixed as part of
+          normal support, but new features or design changes requested
+          after approval are quoted and billed as separate work.
         </p>
       </Section>
 

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service-client";
 import { createSupabaseServerClient } from "@/lib/supabase/ssr-clients";
 import { paystackFeeCents } from "@/lib/paystack";
+import { scheduleInstalments, totalInstalmentsFor, isDepositOrder } from "@/lib/payments";
 
 export const ORDER_STATUSES = [
   "pending",
@@ -68,16 +69,18 @@ export async function getRevenueSummary() {
       supabase
         .from("orders")
         .select("id, status, amount_cents, installment_amount_cents, total_installments"),
-      supabase.from("order_charges").select("order_id, amount_cents").eq("status", "paid"),
+      supabase.from("order_charges").select("order_id, amount_cents, method").eq("status", "paid"),
     ]);
 
   if (ordersError) throw new Error(ordersError.message);
   if (chargesError) throw new Error(chargesError.message);
 
+  // Keep each charge's method so EFT payments (no Paystack fee) aren't
+  // charged a fee in the maths below.
   const chargesByOrder = new Map();
   for (const charge of charges) {
     const list = chargesByOrder.get(charge.order_id) ?? [];
-    list.push(charge.amount_cents);
+    list.push({ amountCents: charge.amount_cents, method: charge.method });
     chargesByOrder.set(charge.order_id, list);
   }
 
@@ -89,9 +92,12 @@ export async function getRevenueSummary() {
 
   for (const order of orders) {
     const orderCharges = chargesByOrder.get(order.id) ?? [];
-    const collectedGross = orderCharges.reduce((sum, c) => sum + c, 0);
+    const collectedGross = orderCharges.reduce((sum, c) => sum + c.amountCents, 0);
     collectedGrossCents += collectedGross;
-    paystackFeesCents += orderCharges.reduce((sum, c) => sum + paystackFeeCents(c), 0);
+    paystackFeesCents += orderCharges.reduce(
+      (sum, c) => sum + (c.method === "eft" ? 0 : paystackFeeCents(c.amountCents)),
+      0
+    );
 
     // What's still owed on this specific order, regardless of order status.
     const remaining = Math.max(order.amount_cents - collectedGross, 0);
@@ -176,8 +182,11 @@ export async function createOrder({
     totalRand = service.totalRand;
   }
 
+  // 30% deposit first, then the balance (see lib/payments.js). installment_
+  // amount_cents stores the regular post-deposit instalment for display.
   const amountCents = Math.round(totalRand * 100);
-  const installmentAmountCents = Math.round(amountCents / plan.installments);
+  const totalInstallments = totalInstalmentsFor(plan.installments);
+  const schedule = scheduleInstalments(amountCents, totalInstallments);
 
   const supabase = createServiceClient();
   const { data, error } = await supabase
@@ -190,8 +199,9 @@ export async function createOrder({
       service_type: serviceType,
       payment_plan: paymentPlan,
       amount_cents: amountCents,
-      installment_amount_cents: installmentAmountCents,
-      total_installments: plan.installments,
+      installment_amount_cents: schedule[1],
+      deposit_cents: schedule[0],
+      total_installments: totalInstallments,
       currency: "ZAR",
       order_token: generateOrderToken(),
     })
@@ -313,7 +323,8 @@ export async function updateServicePlan(id, { serviceType, paymentPlan, customAm
   }
 
   const amountCents = Math.round(totalRand * 100);
-  const installmentAmountCents = Math.round(amountCents / plan.installments);
+  const totalInstallments = totalInstalmentsFor(plan.installments);
+  const schedule = scheduleInstalments(amountCents, totalInstallments);
 
   const { error } = await supabase
     .from("orders")
@@ -321,8 +332,9 @@ export async function updateServicePlan(id, { serviceType, paymentPlan, customAm
       service_type: serviceType,
       payment_plan: paymentPlan,
       amount_cents: amountCents,
-      installment_amount_cents: installmentAmountCents,
-      total_installments: plan.installments,
+      installment_amount_cents: schedule[1],
+      deposit_cents: schedule[0],
+      total_installments: totalInstallments,
     })
     .eq("id", id);
 
@@ -442,7 +454,10 @@ function addOneMonth(date) {
 // payment, or a later admin-triggered instalment charge. Recorded as
 // 'pending' up front so the webhook always has a row to match against, and
 // so a charge attempt that never gets confirmed still shows up in history.
-export async function recordChargeAttempt(orderId, { installmentNumber, amountCents, reference }) {
+export async function recordChargeAttempt(
+  orderId,
+  { installmentNumber, amountCents, reference, method = "card" }
+) {
   const supabase = createServiceClient();
 
   const { error } = await supabase.from("order_charges").insert({
@@ -451,6 +466,7 @@ export async function recordChargeAttempt(orderId, { installmentNumber, amountCe
     amount_cents: amountCents,
     paystack_reference: reference,
     status: "pending",
+    method,
   });
 
   if (error) {
@@ -497,7 +513,7 @@ export async function finalizeCharge(reference, { status, authorizationCode }) {
 
   const { data: order, error: orderFetchError } = await supabase
     .from("orders")
-    .select("installments_paid, total_installments")
+    .select("installments_paid, total_installments, deposit_cents, status")
     .eq("id", charge.order_id)
     .single();
   if (orderFetchError) throw new Error(orderFetchError.message);
@@ -505,11 +521,27 @@ export async function finalizeCharge(reference, { status, authorizationCode }) {
   const installmentsPaid = order.installments_paid + 1;
   const fullyPaid = installmentsPaid >= order.total_installments;
 
-  const orderUpdate = {
-    status: "paid",
-    installments_paid: installmentsPaid,
-    next_charge_due_at: fullyPaid ? null : addOneMonth(new Date()),
-  };
+  let orderUpdate;
+  if (isDepositOrder(order)) {
+    // Deposit orders: the first payment is the deposit, which kicks off the
+    // build (pending -> in_progress). "paid" only once everything is settled,
+    // so a mid-plan instalment can never drag a delivered order backwards.
+    orderUpdate = {
+      installments_paid: installmentsPaid,
+      // A once-off plan's balance is due on approval, not on a date; monthly
+      // plans' later instalments start a month after the deposit.
+      next_charge_due_at:
+        fullyPaid || order.total_installments === 2 ? null : addOneMonth(new Date()),
+    };
+    if (fullyPaid) orderUpdate.status = "paid";
+    else if (order.status === "pending") orderUpdate.status = "in_progress";
+  } else {
+    orderUpdate = {
+      status: "paid",
+      installments_paid: installmentsPaid,
+      next_charge_due_at: fullyPaid ? null : addOneMonth(new Date()),
+    };
+  }
   // The saved-card token only comes back on the first payment (made via
   // Paystack's hosted checkout); later instalments are charged against it,
   // not asked to provide a fresh one.
@@ -548,7 +580,7 @@ export async function getDueInstallments() {
 
   const { data, error } = await supabase
     .from("orders")
-    .select("id, client_name, installment_amount_cents, installments_paid, total_installments, next_charge_due_at")
+    .select("id, client_name, amount_cents, installment_amount_cents, deposit_cents, installments_paid, total_installments, next_charge_due_at")
     .lte("next_charge_due_at", today)
     .not("next_charge_due_at", "is", null)
     .neq("status", "cancelled");

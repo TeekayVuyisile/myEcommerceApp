@@ -29,7 +29,7 @@ export default function PayButton({ token }) {
         disabled={isPending}
         className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto"
       >
-        {isPending ? "Redirecting…" : "Pay now"}
+        {isPending ? "Redirecting…" : "Pay by card"}
       </motion.button>
       {error && (
         <p role="alert" className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">

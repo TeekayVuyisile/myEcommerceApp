@@ -2,6 +2,8 @@
 // pricing page and the admin order-creation form, so the admin never has to
 // type (and possibly mistype) an amount for a standard plan.
 
+import { scheduleInstalments, totalInstalmentsFor } from "@/lib/payments";
+
 function roundRand(n) {
   return Math.round(n * 100) / 100;
 }
@@ -13,13 +15,29 @@ function formatRand(n) {
   })}`;
 }
 
-function plan(key, label, installments, totalRand) {
+// Every standard plan is a 30% deposit followed by the balance (see
+// lib/payments.js). `installments` is what the client sees on the pricing card
+// (1 = once-off); the stored order has at least 2 payments (deposit + balance).
+// amountRand is kept as the plain total/installments figure for any older
+// display code; the deposit/later figures are what the UI should show.
+function planPricing(installments, totalRand) {
+  if (totalRand === null) {
+    return { amountRand: null, depositRand: null, laterAmountRand: null, laterCount: 0 };
+  }
+  const schedule = scheduleInstalments(
+    Math.round(totalRand * 100),
+    totalInstalmentsFor(installments)
+  );
   return {
-    key,
-    label,
-    installments,
-    amountRand: totalRand === null ? null : roundRand(totalRand / installments),
+    amountRand: roundRand(totalRand / installments),
+    depositRand: schedule[0] / 100,
+    laterAmountRand: schedule[1] / 100,
+    laterCount: schedule.length - 1,
   };
+}
+
+function plan(key, label, installments, totalRand) {
+  return { key, label, installments, ...planPricing(installments, totalRand) };
 }
 
 export const SERVICES = [
@@ -73,7 +91,7 @@ export const SERVICES = [
       "Scope, timeline and price agreed together upfront",
     ],
     plans: [plan("negotiable", "Let's discuss", 1, null)],
-    note: "Message me with what you have in mind and we'll figure out the details.",
+    note: "Message me with what you have in mind and we'll figure out the details. A 30% deposit starts the build.",
   },
 ];
 
@@ -106,7 +124,7 @@ export function withTotalRand(service, totalRand) {
     price: totalRand === null ? service.price : formatRand(totalRand),
     plans: service.plans.map((p) => ({
       ...p,
-      amountRand: totalRand === null ? null : roundRand(totalRand / p.installments),
+      ...planPricing(p.installments, totalRand),
     })),
   };
 }

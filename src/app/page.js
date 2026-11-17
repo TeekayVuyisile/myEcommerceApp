@@ -78,8 +78,8 @@ const STEPS = [
     ),
   },
   {
-    title: "I build, you preview",
-    body: "I build your site and send you a private link with a live, working preview.",
+    title: "Deposit, build & preview",
+    body: "Pay a 30% deposit (card or EFT) through your private order link. I build your site and share a live, working preview with unlimited revisions.",
     icon: (
       <>
         <rect x="2" y="4" width="20" height="14" rx="2" />
@@ -88,8 +88,8 @@ const STEPS = [
     ),
   },
   {
-    title: "Pay when happy",
-    body: "Only once you approve the result do you pay, securely, through the same link.",
+    title: "Approve & pay the balance",
+    body: "A 30% deposit starts the build. Once you approve the preview, you pay the rest — by card or EFT.",
     icon: (
       <>
         <rect x="2" y="6" width="20" height="14" rx="2" />
@@ -103,25 +103,33 @@ export default async function Home() {
   const services = await getResolvedServices();
 
   return (
-    <div className="flex flex-1 flex-col bg-background text-foreground">
+    <div className="relative isolate flex flex-1 flex-col bg-background text-foreground">
       {/*
-        Full-bleed color wash the glass cards blur against. The cards' own
-        backdrop-blur does the blurring — this layer just needs to guarantee
-        vivid color everywhere in the viewport, with no gaps, at any scroll
-        position (hence `fixed`, not scrolling with content).
+        Hero-only gradient slash — like Stripe's hero banner, but confined to
+        just the header + hero band (not the whole page) and recolored to
+        our own accent (indigo/blue) family instead of their purple-to-red
+        spectrum. Blobs sit only in the top-left quadrant and the mask cuts
+        off well past halfway across, so the right/bottom of the hero (and
+        every section below it) stays plain background — no page-wide tint.
       */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(ellipse 70% 60% at 12% 15%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%)," +
-            "radial-gradient(ellipse 70% 60% at 88% 85%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%)," +
-            "radial-gradient(ellipse 65% 55% at 90% 15%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%)," +
-            "radial-gradient(ellipse 65% 55% at 10% 85%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%)," +
-            "radial-gradient(ellipse 80% 70% at 50% 50%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 75%)",
-        }}
-      />
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] overflow-hidden sm:h-[600px] lg:h-[620px]"
+      >
+        <div
+          className="hero-gradient-drift absolute -inset-[10%]"
+          style={{
+            background:
+              "radial-gradient(ellipse 48% 42% at 8% 12%, color-mix(in srgb, var(--accent) 75%, transparent), transparent 70%)," +
+              "radial-gradient(ellipse 42% 38% at 32% 4%, color-mix(in srgb, #38bdf8 60%, transparent), transparent 70%)," +
+              "radial-gradient(ellipse 50% 45% at 18% 40%, color-mix(in srgb, #312e81 55%, transparent), transparent 68%)",
+            maskImage:
+              "linear-gradient(115deg, white 0%, white 26%, transparent 55%)",
+            WebkitMaskImage:
+              "linear-gradient(115deg, white 0%, white 26%, transparent 55%)",
+          }}
+        />
+      </div>
 
       <header className="sticky top-0 z-10 border-b border-glass-border bg-glass backdrop-blur-xl backdrop-saturate-150">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
@@ -178,8 +186,8 @@ export default async function Home() {
             </Reveal>
             <Reveal immediate delay={0.2}>
               <p className="mt-4 max-w-lg text-lg text-muted-foreground">
-                Tell me what you need on WhatsApp. I&apos;ll build it and show
-                you a live preview first.
+                Tell me what you need on WhatsApp. A 30% deposit starts the
+                build, and you see a live preview before paying the balance.
               </p>
             </Reveal>
 
@@ -200,9 +208,9 @@ export default async function Home() {
                   <path d="m9 12 2 2 4-4" />
                 </svg>
                 <p className="text-sm font-medium">
-                  What makes me different: you never pay upfront. I build
-                  first, you review a live preview, and you only pay once
-                  you&apos;re genuinely happy with the result.
+                  What makes me different: only a 30% deposit to start. You
+                  review a live preview, request as many changes as you need,
+                  and only pay the balance once you&apos;re genuinely happy.
                 </p>
               </div>
             </Reveal>
@@ -243,7 +251,7 @@ export default async function Home() {
                 <path d="m9 12 2 2 4-4" />
               </svg>
               <span className="text-xs font-medium">
-                Pay only when you&apos;re happy
+                Balance only when you&apos;re happy
               </span>
             </div>
           </Reveal>
@@ -319,7 +327,7 @@ export default async function Home() {
               Services &amp; pricing
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Pick what fits — every plan follows the same rule: you pay once you&apos;re happy.
+              Pick what fits — every plan starts with a 30% deposit, and the balance is due once you&apos;re happy.
             </p>
           </Reveal>
           <div className="mt-10 grid w-full grid-cols-1 gap-6 sm:grid-cols-3">
@@ -380,31 +388,124 @@ export default async function Home() {
           </div>
         </section>
         <section id="about" className="relative mt-24 w-full scroll-mt-24">
-          <h2 className="text-center text-2xl font-semibold tracking-tight">
-            More about the developer
-          </h2>
-        </section>
-         <Reveal className="relative mt-6 flex w-full max-w-2xl flex-col items-center gap-5 rounded-2xl border border-glass-border bg-glass p-6 text-center shadow-sm backdrop-blur-xl backdrop-saturate-150 sm:flex-row sm:items-start sm:text-left">
-          <Image
-            src="/profile.jpg"
-            alt="Teekay Vuyisile Manale"
-            width={80}
-            height={80}
-            className="h-20 w-20 shrink-0 rounded-full object-cover"
-          />
-          <div>
-            <h2 className="text-lg font-semibold">Hi, I&apos;m Teekay</h2>
+          <Reveal className="text-center">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              More about the developer
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Full-stack web developer with a qualification in Information and
-              Communication Technology (Sol Plaatje University) and hands-on
-              experience building production web apps. I work across React, Next.js, Node.js, PostgreSQL
-              and Supabase, and build every project the same way: you see it
-              working before you pay for it.
+              The person you&apos;ll actually be chatting with on WhatsApp.
             </p>
-            
+          </Reveal>
+          <Reveal delay={0.1} className="mt-10">
+            <div className="relative overflow-hidden rounded-2xl border border-glass-border bg-glass p-6 shadow-sm backdrop-blur-xl backdrop-saturate-150 sm:p-8">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -top-24 -right-24 -z-10 h-64 w-64 rounded-full bg-accent/20 blur-3xl"
+              />
+              <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start">
+                <div className="flex shrink-0 flex-col items-center gap-3">
+                  <div className="relative">
+                    <div
+                      aria-hidden
+                      className="avatar-glow absolute -inset-4 -z-10 rounded-full bg-gradient-to-br from-accent/30 via-accent/10 to-transparent blur-2xl"
+                    />
+                    <Image
+                      src="/profile.jpg"
+                      alt="Teekay Vuyisile Manale"
+                      width={160}
+                      height={160}
+                      className="h-36 w-36 rounded-full border-2 border-accent object-cover sm:h-40 sm:w-40"
+                    />
+                  </div>
+                  <span className="rounded-full border border-card-border px-3 py-1 text-xs text-muted-foreground">
+                    South Africa · Remote-friendly
+                  </span>
+                </div>
+                <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+                  <span className="text-xs font-semibold tracking-widest text-accent">
+                    THE DEVELOPER
+                  </span>
+                  <h3 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+                    Hi, I&apos;m Teekay
+                  </h3>
+                  <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
+                    Full-stack web developer with a qualification in
+                    Information and Communication Technology (Sol Plaatje
+                    University) and hands-on experience building production
+                    web apps. I build every project the same way: you see it
+                    working before you pay the balance.
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-2 sm:justify-start">
+                    {["React", "Next.js", "Node.js", "PostgreSQL", "Supabase"].map(
+                      (tech, i) => (
+                        <Reveal key={tech} delay={0.3 + i * 0.05}>
+                          <span className="inline-block cursor-default rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent transition-transform duration-200 hover:-translate-y-0.5 hover:scale-105">
+                            {tech}
+                          </span>
+                        </Reveal>
+                      )
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </section>
+
+        <section className="relative mt-24 w-full scroll-mt-24">
+          <div className="relative flex w-full flex-col items-center gap-4 overflow-hidden rounded-2xl border border-accent/30 bg-glass px-6 py-12 text-center backdrop-blur-xl backdrop-saturate-150 sm:py-16">
+            <div
+              aria-hidden
+              className="cta-glow pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_60%_60%_at_50%_0%,color-mix(in_srgb,var(--accent)_22%,transparent),transparent_70%)]"
+            />
+            <Reveal>
+              <span className="text-xs font-semibold tracking-widest text-accent">
+                LET&apos;S BUILD SOMETHING
+              </span>
+            </Reveal>
+            <Reveal delay={0.08}>
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                Ready to get started?
+              </h2>
+            </Reveal>
+            <Reveal delay={0.16}>
+              <p className="max-w-md text-sm text-muted-foreground">
+                Tell me what you need on WhatsApp — no forms, no commitment,
+                just a chat.
+              </p>
+            </Reveal>
+            <Reveal delay={0.24}>
+              <MotionLink
+                href={whatsappHref(
+                  "Hi! I'd like to talk about building a website/e-commerce store."
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-base font-medium text-accent-foreground transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.96L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21h.01c5.46 0 9.9-4.45 9.9-9.92 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.15h-.01a8.2 8.2 0 0 1-4.18-1.14l-.3-.18-3.12.82.83-3.04-.2-.31a8.22 8.22 0 0 1-1.26-4.39c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 5.83 2.42 8.19 8.19 0 0 1 2.41 5.83c0 4.55-3.7 8.23-8.25 8.23Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.17.24-.64.81-.78.97-.15.17-.29.19-.53.06-.25-.12-1.04-.38-1.99-1.22-.73-.66-1.23-1.46-1.37-1.71-.15-.24-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.24-.42.08-.16.04-.3-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42h-.48c-.16 0-.43.06-.65.31-.23.24-.85.83-.85 2.03s.87 2.36.99 2.52c.12.17 1.71 2.62 4.14 3.67.58.25 1.03.4 1.38.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.08.15-1.18-.06-.1-.23-.16-.48-.28Z" />
+                </svg>
+                Chat on WhatsApp
+              </MotionLink>
+            </Reveal>
+            <Reveal delay={0.32}>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span>30% deposit · balance when happy</span>
+                <span aria-hidden>·</span>
+                <span>Usually replies same day</span>
+                <span aria-hidden>·</span>
+                <span>Free 5-minute chat</span>
+              </div>
+            </Reveal>
           </div>
-        </Reveal>
-        
+        </section>
       </main>
 
       <footer className="border-t border-glass-border bg-glass backdrop-blur-xl backdrop-saturate-150">
